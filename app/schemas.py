@@ -10,6 +10,9 @@ class SearchBookInput(BaseModel):
         description="Book title to search for",
     )
 
+class BorrowBookInput(BaseModel):
+    book_id: PositiveInt = Field(description="Numeric book id from a tool result")
+    quantity: int = Field(default=1, ge=1, le=5, description="Number of copies, 1 to 5")
 
 class BookIdInput(BaseModel):
 
@@ -56,10 +59,10 @@ TOOLS = [
         "function": {
             "name": "borrow_book",
             "description": (
-                "Borrow one copy of a book. This operation is admin-only. "
-                "Requires a book_id."
+                "Borrow copies of a book. This operation is admin-only. "
+                "Requires a book_id and an optional quantity from 1 to 5 (default 1)."
             ),
-            "parameters": BookIdInput.model_json_schema(),
+            "parameters": BorrowBookInput.model_json_schema(),
         },
     },
 ]

@@ -50,31 +50,34 @@ def check_availability(book_id):
     return {"ok": True, "book_id": book_id, "copies": row[0]}
 
 
-def borrow_book(book_id):
+def borrow_book(book_id, quantity=1):
     with get_connection() as conn:
-        # copies only if copies > 0
+    
         row = conn.execute(
             """
-            UPDATE books SET copies = copies - 1
-            WHERE id = %s AND copies > 0
+            UPDATE books SET copies = copies - %s
+            WHERE id = %s AND copies >= %s
             RETURNING copies
             """,
-            (book_id,),
+            (quantity, book_id, quantity),
         ).fetchone()
 
         if not row:
             exists = conn.execute(
-                "SELECT 1 FROM books WHERE id = %s",
-                (book_id,),
+                "SELECT 1 FROM books WHERE id = %s", (book_id,)
             ).fetchone()
-
             if not exists:
                 return {"ok": False, "error": "BOOK_NOT_FOUND"}
             return {"ok": False, "error": "OUT_OF_STOCK"}
 
-        conn.execute(
+        conn.executemany(
             "INSERT INTO borrow_log (book_id) VALUES (%s)",
-            (book_id,),
+            [(book_id,)] * quantity,
         )
 
-        return {"ok": True, "book_id": book_id, "copies_left": row[0]}
+        return {
+            "ok": True,
+            "book_id": book_id,
+            "borrowed": quantity,
+            "copies_left": row[0],
+        }
