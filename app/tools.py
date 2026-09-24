@@ -35,7 +35,6 @@ def search_book(query):
     return {
         "ok": True,
         "books": books,
-        "hint": "Call check_availability with the book id to get the stock.",
     }
 
 def check_availability(book_id):
