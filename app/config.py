@@ -1,3 +1,16 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+host = os.getenv("POSTGRES_DB_HOST", "localhost")
+port = os.getenv("POSTGRES_DB_PORT", "5432")
+dbname = os.getenv("POSTGRES_DB_NAME")
+username = os.getenv("POSTGRES_DB_USER")
+password = os.getenv("POSTGRES_DB_PASSWORD")
+
+POSTGRES_DB_URL = f'postgresql://{username}:{password}@{host}:{port}/{dbname}'
+
 MAX_ITERATIONS = 6
 MAX_TOOL_CALLS = 5
 
