@@ -97,14 +97,50 @@ if name not in PERMISSIONS.get(user_role, set()):
     return {"ok": False, "error": "PERMISSION_DENIED"}
 ```
 
-### 5. Maximum Iteration and Tool-Call Limits
+### 5. Agent Loop
 
-The agent has limits on the number of iterations and tool calls it can make. This helps prevent endless agent loops and excessive tool execution.
+The agent follows a simple **Decision → Action → Observation** loop:
+
+```text
+User Request
+     ↓
+  Decision
+  (LLM)
+     ↓
+  Action
+ (Tool Call)
+     ↓
+ Observation
+ (Tool Result)
+     ↓
+  Decision
+     ↓
+Final Answer
+```
+
+* **Decision:** The LLM decides whether a tool is needed.
+* **Action:** The selected tool is executed through `run_tool()`.
+* **Observation:** The tool result is returned to the LLM.
+* The loop continues until the LLM provides a final answer or reaches the configured limits.
+
+```python
+for iteration in range(1, MAX_ITERATIONS + 1):
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        tools=TOOLS,
+    )
+```
+
+The agent is limited by:
 
 ```python
 MAX_ITERATIONS = 6
 MAX_TOOL_CALLS = 5
 ```
+
+These limits help prevent endless agent loops and excessive tool calls.
+
 
 ### 6. Controlled Tool Errors
 
