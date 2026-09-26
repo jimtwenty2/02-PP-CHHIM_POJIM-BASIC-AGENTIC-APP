@@ -179,7 +179,7 @@ Some supported models include:
 
 ---
 
-## 1. Clone the Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/jimtwenty2/02-PP-CHHIM_POJIM-BASIC-AGENTIC-APP.git
@@ -193,7 +193,7 @@ cd 02-PP-CHHIM_POJIM-BASIC-AGENTIC-APP
 
 ---
 
-## 2. Set Up Environment Variables
+### 2. Set Up Environment Variables
 
 Create your own `.env` file from the provided example:
 
@@ -219,7 +219,7 @@ POSTGRES_DB_PASSWORD=<databse_secret>
 ```
 ---
 
-## 3. Install Python Dependencies
+### 3. Install Python Dependencies
 
 This project uses **uv** for Python package and virtual environment management.
 
@@ -234,8 +234,7 @@ uv sync
 This will create the project's virtual environment and install the required dependencies.
 
 ---
-
-## 4. Set Up Ollama
+### 4. Set Up Ollama
 
 Make sure Ollama is installed and running:
 
@@ -265,7 +264,7 @@ MODEL=<MODEL_NAME>
 
 ---
 
-## 5. Start the Database
+### 5. Start the Database
 
 The project uses **Docker Compose** to run the PostgreSQL database.
 
@@ -283,7 +282,7 @@ docker compose ps
 
 You should see the PostgreSQL container running.
 
-## 6. Initialize the Database
+### 6. Initialize the Database
 
 After the PostgreSQL database is running, initialize the database using:
 
@@ -293,7 +292,7 @@ uv run python -m app.init_db
 
 This command prepares the database for the application.
 
-### What does `app.init_db` do?
+#### What does `app.init_db` do?
 
 The initialization script:
 
@@ -326,3 +325,123 @@ uv run python -m app.init_db
 ```
 
 > **Note:** Run the initialization script only after the PostgreSQL container is running and your `.env` database configuration is correct.
+
+### 7. Check Database
+
+After init database, You can view the PostgreSQL tables and their data inside the Docker container:
+
+```bash
+docker compose exec db psql -U <POSTGRES_DB_USER> -d <POSTGRES_DB_NAME>
+```
+
+Inside PostgreSQL:
+
+```sql
+-- List tables
+\dt
+
+-- View books table structure
+\d books
+
+-- View books data
+SELECT * FROM books;
+
+-- View borrowing records
+SELECT * FROM borrow_log;
+```
+
+Exit PostgreSQL with:
+
+```sql
+\q
+```
+### 8. Run the Application
+
+Start the application from the project root directory:
+
+```bash
+uv run python main.py
+```
+
+The application will ask you to choose a role:
+
+```text
+Role (customer/admin):
+```
+
+Available roles:
+
+* `customer`
+* `admin`
+
+Enter your library request and the AI agent will process it using the available tools and the permissions of the selected role.
+
+To exit the application:
+
+```text
+quit
+```
+
+## Test cases
+### Case 1 - List Books | Role : Customer
+```text
+Query: Show me all books
+```
+![case 1](./screenshots/Screenshot%20From%202026-09-26%2013-17-49.png)
+
+### Case 2 - Search Book and its copies | Role: Customer
+```text
+Query: Search for Kolab Pailin and tell me how many copies are available.
+```
+In this case, The agent can use multiple tools in sequence when one tool does not provide all the required information.
+```text
+┌─────────────────────────────┐
+│        User Request         │
+│ "Find Kolab Pailin copies"  │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│ search_book("Kolab Pailin") │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│        Book ID = 2          │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│   check_availability(2)     │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│     10 copies available     │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│       Final Answer          │
+└─────────────────────────────┘
+```
+![case 2](./screenshots/Screenshot%20From%202026-09-26%2013-28-09.png)
+
+### Case 3 — Customer Attempts to Borrow | Role: Customer
+```text
+Query: Borrow 1 copy of book id 2 
+```
+The customer requested to borrow 1 copy of book ID 2. The agent selected the borrow_book tool, but the permission layer checked the user's role and rejected the request because customers are not allowed to borrow books.
+
+The tool returned PERMISSION_DENIED, and the agent informed the customer that admin privileges are required.
+![case 3](./screenshots/Screenshot%20From%202026-09-26%2013-35-41.png)
+
+### Case 4 — Invalid Input Test | Role: Admin
+```text
+Query: Borrow 1 copy of book id -1 
+```
+The agent attempted to call borrow_book, but the input validation rejected book_id = -1 because a valid book ID must be a positive integer. The tool returned INVALID_INPUT, and the agent informed the user to provide a valid book ID.
+![case 4](./screenshots/Screenshot%20From%202026-09-26%2013-42-50.png)
+
+### Case 5 — Admin Borrows 2 Book | Role: Admin
+```text
+Query: Borrow 2 copy of book id 1 
+```
+The admin requested to borrow 2 copies of book ID 1. The agent called the borrow_book tool with the correct book_id and quantity. The request passed permission and input validation, successfully updated the database, and recorded the borrowing. The result shows that 2 copies were borrowed and 27 copies remain.
+![case 5](./screenshots/Screenshot%20From%202026-09-26%2013-59-17.png)
+

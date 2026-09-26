@@ -19,6 +19,10 @@ class BookIdInput(BaseModel):
     book_id: PositiveInt = Field(
         description="Numeric book ID taken from a previous tool result, for example 2",
     )
+    quantity: PositiveInt = Field(
+        default=1,
+        description="Number of copies to borrow",
+    )
 
 TOOLS = [
     {

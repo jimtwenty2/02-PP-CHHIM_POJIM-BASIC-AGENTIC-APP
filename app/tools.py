@@ -51,33 +51,40 @@ def check_availability(book_id):
 
 
 def borrow_book(book_id, quantity=1):
-    with get_connection() as conn:
-    
-        row = conn.execute(
-            """
-            UPDATE books SET copies = copies - %s
-            WHERE id = %s AND copies >= %s
-            RETURNING copies
-            """,
-            (quantity, book_id, quantity),
-        ).fetchone()
+    try:
+        with get_connection() as conn:
 
-        if not row:
-            exists = conn.execute(
-                "SELECT 1 FROM books WHERE id = %s", (book_id,)
+            row = conn.execute(
+                """
+                UPDATE books SET copies = copies - %s
+                WHERE id = %s AND copies >= %s
+                RETURNING copies
+                """,
+                (quantity, book_id, quantity),
             ).fetchone()
-            if not exists:
-                return {"ok": False, "error": "BOOK_NOT_FOUND"}
-            return {"ok": False, "error": "OUT_OF_STOCK"}
 
-        conn.executemany(
-            "INSERT INTO borrow_log (book_id) VALUES (%s)",
-            [(book_id,)] * quantity,
-        )
+            if not row:
+                exists = conn.execute(
+                    "SELECT 1 FROM books WHERE id = %s", (book_id,)
+                ).fetchone()
 
-        return {
-            "ok": True,
-            "book_id": book_id,
-            "borrowed": quantity,
-            "copies_left": row[0],
-        }
+                if not exists:
+                    return {"ok": False, "error": "BOOK_NOT_FOUND"}
+
+                return {"ok": False, "error": "OUT_OF_STOCK"}
+
+            with conn.cursor() as cur:
+                cur.executemany(
+                    "INSERT INTO borrow_log (book_id) VALUES (%s)",
+                    [(book_id,)] * quantity,
+                )
+
+            return {
+                "ok": True,
+                "book_id": book_id,
+                "borrowed": quantity,
+                "copies_left": row[0],
+            }
+
+    except Exception as e:
+        return {"ok": False, "error": "TOOL_FAILED"}
