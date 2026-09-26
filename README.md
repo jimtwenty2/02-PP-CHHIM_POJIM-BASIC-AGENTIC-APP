@@ -1,6 +1,5 @@
 # BASIC AGENTIC APPLICATION
 
-
 ## Project Overview
 
 This project is an **Agentic Library Management System** that uses an AI agent to interact with a library database through predefined tools.
@@ -33,6 +32,92 @@ The system has two main roles:
 * **Cannot borrow books.**
 
 The permission system ensures that the agent can only perform actions that the current user is authorized to perform.
+
+## Safety Controls
+
+This project includes basic safety controls to make the AI agent more secure and predictable.
+
+### 1. Basic Input Validation
+
+The project uses **Pydantic** to validate tool inputs before executing them. This helps ensure values such as book IDs and quantities are valid.
+
+```python
+try:
+    clean = schema(**args)
+except ValidationError:
+    return {"ok": False, "error": "INVALID_INPUT"}
+```
+
+### 2. Basic Error Handling
+
+Tool execution is wrapped with error handling. If an unexpected error occurs, the application returns a controlled error instead of exposing the internal exception.
+
+```python
+try:
+    return function(**clean.model_dump())
+except Exception:
+    return {"ok": False, "error": "TOOL_FAILED"}
+```
+
+### 3. Tool Allowlist
+
+Only tools registered in `TOOL_REGISTRY` can be executed. This prevents the agent from calling arbitrary functions.
+
+```python
+if name not in TOOL_REGISTRY:
+    return {"ok": False, "error": "TOOL_NOT_ALLOWED"}
+```
+
+### 4. Role-Based Permissions
+
+The project has two roles: `customer` and `admin`.
+
+Customers can view and search books and check availability, while admins have access to all available tools, including borrowing books.
+
+```python
+PERMISSIONS = {
+    "customer": {
+        "list_books",
+        "search_book",
+        "check_availability",
+    },
+    "admin": {
+        "list_books",
+        "search_book",
+        "check_availability",
+        "borrow_book",
+    },
+}
+```
+
+The user's role is checked before a tool is executed:
+
+```python
+if name not in PERMISSIONS.get(user_role, set()):
+    return {"ok": False, "error": "PERMISSION_DENIED"}
+```
+
+### 5. Maximum Iteration and Tool-Call Limits
+
+The agent has limits on the number of iterations and tool calls it can make. This helps prevent endless agent loops and excessive tool execution.
+
+```python
+MAX_ITERATIONS = 6
+MAX_TOOL_CALLS = 5
+```
+
+### 6. Controlled Tool Errors
+
+Library tools return controlled errors for expected situations, such as a book not being found or having no available copies.
+
+```python
+if not row:
+    return {"ok": False, "error": "BOOK_NOT_FOUND"}
+
+return {"ok": False, "error": "OUT_OF_STOCK"}
+```
+
+These controls ensure that the agent can only use approved tools, validates inputs, respects user permissions, handles errors safely, and stops after reaching execution limits.
 
 
 ## Requirements and Installation
