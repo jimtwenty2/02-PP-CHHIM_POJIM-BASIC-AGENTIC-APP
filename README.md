@@ -1,6 +1,41 @@
 # BASIC AGENTIC APPLICATION
 
-## Requirements
+
+## Project Overview
+
+This project is an **Agentic Library Management System** that uses an AI agent to interact with a library database through predefined tools.
+
+The system uses **PostgreSQL** to manage books and borrowing records. The AI agent can call tools to search for books, check availability, and perform borrowing actions based on the user's permissions.
+
+### Available Tools
+
+* **`list_books()`** — Lists all books with their title, author, and available copies.
+* **`search_book(query)`** — Searches for books by title.
+* **`check_availability(book_id)`** — Checks the number of available copies for a book.
+* **`borrow_book(book_id, quantity)`** — Borrows books and records each borrowing action in the `borrow_log` table.
+
+### User Roles
+
+The system has two main roles:
+
+**Admin**
+
+* Can use all available tools.
+* Can list and search books.
+* Can check book availability.
+* Can borrow books.
+
+**User**
+
+* Can list books.
+* Can search for books.
+* Can check book availability.
+* **Cannot borrow books.**
+
+The permission system ensures that the agent can only perform actions that the current user is authorized to perform.
+
+
+## Requirements and Installation
 
 Before running the project, make sure you have:
 
